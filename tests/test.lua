@@ -451,6 +451,11 @@ local cjson_tests = {
     { "Decode (safe) error generation after new()",
       function(...) return json_safe.new().decode(...) end, { "Oops" },
       true, { nil, "Expected value but found invalid token at character 1" } },
+
+    -- Decode \x00 at the middle throws error
+    { "Decode \x00 at the middle [throw error]",
+      json.decode, { '[ 1 ]' .. '\x00' .. '[ 2 ]' },
+      false, { "Expected EOF but found T_END at character 6" } },
 }
 
 print(("==> Testing Lua CJSON version %s\n"):format(json._VERSION))

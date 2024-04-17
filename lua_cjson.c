@@ -1441,6 +1441,10 @@ static int json_decode(lua_State *l)
     if (token.type != T_END)
         json_throw_parse_error(l, &json, "the end", &token);
 
+    /* Make sure T_END (\x00) doesn't occur at middle of input */
+    if (json.data + json_len > json.ptr)
+        json_throw_parse_error(l, &json, "EOF", &token);
+
     strbuf_free(json.tmp);
 
     return 1;
