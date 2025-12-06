@@ -84,6 +84,7 @@
 #define DEFAULT_DECODE_ARRAY_WITH_ARRAY_MT 0
 #define DEFAULT_ENCODE_ESCAPE_FORWARD_SLASH 1
 #define DEFAULT_ENCODE_SKIP_UNSUPPORTED_VALUE_TYPES 0
+#define DEFAULT_DECODE_NULL_AS_NIL 0
 
 #ifdef DISABLE_INVALID_NUMBERS
 #undef DEFAULT_DECODE_INVALID_NUMBERS
@@ -168,6 +169,7 @@ typedef struct {
     int decode_max_depth;
     int decode_array_with_array_mt;
     int encode_skip_unsupported_value_types;
+    int decode_null_as_nil;
 } json_config_t;
 
 typedef struct {
@@ -390,6 +392,16 @@ static int json_cfg_encode_keep_buffer(lua_State *l)
     return 1;
 }
 
+/* Configures how to treat null when decoding */
+static int json_cfg_decode_null_as_nil(lua_State *l)
+{
+    json_config_t *cfg = json_arg_init(l, 1);
+
+    json_enum_option(l, 1, &cfg->decode_null_as_nil, NULL, 1);
+
+    return 1;
+}
+
 #if defined(DISABLE_INVALID_NUMBERS) && !defined(USE_INTERNAL_FPCONV)
 void json_verify_invalid_number_setting(lua_State *l, int *setting)
 {
@@ -481,6 +493,7 @@ static void json_create_config(lua_State *l)
     cfg->decode_array_with_array_mt = DEFAULT_DECODE_ARRAY_WITH_ARRAY_MT;
     cfg->encode_escape_forward_slash = DEFAULT_ENCODE_ESCAPE_FORWARD_SLASH;
     cfg->encode_skip_unsupported_value_types = DEFAULT_ENCODE_SKIP_UNSUPPORTED_VALUE_TYPES;
+    cfg->decode_null_as_nil = DEFAULT_DECODE_NULL_AS_NIL;
 
 #if DEFAULT_ENCODE_KEEP_BUFFER > 0
     strbuf_init(&cfg->encode_buf, 0);
@@ -1399,7 +1412,10 @@ static void json_process_value(lua_State *l, json_parse_t *json,
     case T_NULL:
         /* In Lua, setting "t[k] = nil" will delete k from the table.
          * Hence a NULL pointer lightuserdata object is used instead */
-        lua_pushlightuserdata(l, NULL);
+        if (json->cfg && json->cfg->decode_null_as_nil)
+            lua_pushnil(l);
+        else
+            lua_pushlightuserdata(l, NULL);
         break;;
     default:
         json_throw_parse_error(l, json, "value", token);
@@ -1521,6 +1537,7 @@ static int lua_cjson_new(lua_State *l)
         { "decode_invalid_numbers", json_cfg_decode_invalid_numbers },
         { "encode_escape_forward_slash", json_cfg_encode_escape_forward_slash },
         { "encode_skip_unsupported_value_types", json_cfg_encode_skip_unsupported_value_types },
+        { "decode_null_as_nil" , json_cfg_decode_null_as_nil },
         { "new", lua_cjson_new },
         { NULL, NULL }
     };
