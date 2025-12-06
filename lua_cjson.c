@@ -1537,7 +1537,7 @@ static int lua_cjson_new(lua_State *l)
         { "decode_invalid_numbers", json_cfg_decode_invalid_numbers },
         { "encode_escape_forward_slash", json_cfg_encode_escape_forward_slash },
         { "encode_skip_unsupported_value_types", json_cfg_encode_skip_unsupported_value_types },
-        { "decode_null_as_nil" , json_cfg_decode_null_as_nil },
+        { "decode_null_as_nil", json_cfg_decode_null_as_nil },
         { "new", lua_cjson_new },
         { NULL, NULL }
     };
