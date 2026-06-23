@@ -16,6 +16,7 @@ Table of Contents
     * [encode_number_precision](#encode_number_precision)
     * [encode_escape_forward_slash](#encode_escape_forward_slash)
     * [decode_array_with_array_mt](#decode_array_with_array_mt)
+    * [decode_null_object_value_as_nil](#decode_null_object_value_as_nil)
 
 Description
 ===========
@@ -206,3 +207,31 @@ cjson.encode(t) -- {"my_array":[]} properly re-encoded as an array
 ```
 
 [Back to TOC](#table-of-contents)
+
+
+decode_null_object_value_as_nil
+------------------------------
+**syntax:** `cjson.decode_null_object_value_as_nil(enabled)`
+
+**default:** false
+
+If enabled, JSON null values that are values of object keys will be decoded as Lua nil.
+If disabled, JSON null values will be decoded as cjson.null.
+
+`null` in array are always decoded as cjson.null.
+
+The `enabled` argument is a boolean.
+
+
+Example:
+
+```lua
+local cjson = require "cjson"
+local json = [[{"key1":null,"key2":"value2"}]]
+local t = cjson.decode(json)
+print(t.key1 == cjson.null) -- true
+
+cjson.decode_null_object_value_as_nil(true)
+local t2 = cjson.decode(json)
+print(t2.key1 == nil) -- true
+```

@@ -332,3 +332,23 @@ Cannot serialise function: type not supported
 
 {"valid":"valid"}
 ["one","two","three"]
+
+
+=== TEST 23: decode null as nil switch
+--- lua
+local cjson = require "cjson"
+local json = [[{"key1":null,"key2":"value2"}]]
+local t = cjson.decode(json)
+print(t.key1 == cjson.null and "key1 is null" or "key1 is not null")
+cjson.decode_null_object_value_as_nil(true)
+local t2 = cjson.decode(json)
+print(t2.key1 == nil and "key1 is nil" or "key1 is not nil")
+
+-- array null are not changed
+local json_arr = '[null, "value2"]'
+local t = cjson.decode(json_arr)
+print(t[1] == cjson.null and "index 1 is null" or "key1 is not null")
+--- out
+key1 is null
+key1 is nil
+index 1 is null

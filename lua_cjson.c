@@ -84,6 +84,7 @@
 #define DEFAULT_DECODE_ARRAY_WITH_ARRAY_MT 0
 #define DEFAULT_ENCODE_ESCAPE_FORWARD_SLASH 1
 #define DEFAULT_ENCODE_SKIP_UNSUPPORTED_VALUE_TYPES 0
+#define DEFAULT_DECODE_NULL_OBJECT_VALUE_AS_NIL 0
 
 #ifdef DISABLE_INVALID_NUMBERS
 #undef DEFAULT_DECODE_INVALID_NUMBERS
@@ -168,6 +169,7 @@ typedef struct {
     int decode_max_depth;
     int decode_array_with_array_mt;
     int encode_skip_unsupported_value_types;
+    int decode_null_object_value_as_nil;
 } json_config_t;
 
 typedef struct {
@@ -390,6 +392,16 @@ static int json_cfg_encode_keep_buffer(lua_State *l)
     return 1;
 }
 
+/* Configures how to treat null when decoding */
+static int json_cfg_decode_null_object_value_as_nil(lua_State *l)
+{
+    json_config_t *cfg = json_arg_init(l, 1);
+
+    json_enum_option(l, 1, &cfg->decode_null_object_value_as_nil, NULL, 1);
+
+    return 1;
+}
+
 #if defined(DISABLE_INVALID_NUMBERS) && !defined(USE_INTERNAL_FPCONV)
 void json_verify_invalid_number_setting(lua_State *l, int *setting)
 {
@@ -481,6 +493,7 @@ static void json_create_config(lua_State *l)
     cfg->decode_array_with_array_mt = DEFAULT_DECODE_ARRAY_WITH_ARRAY_MT;
     cfg->encode_escape_forward_slash = DEFAULT_ENCODE_ESCAPE_FORWARD_SLASH;
     cfg->encode_skip_unsupported_value_types = DEFAULT_ENCODE_SKIP_UNSUPPORTED_VALUE_TYPES;
+    cfg->decode_null_object_value_as_nil = DEFAULT_DECODE_NULL_OBJECT_VALUE_AS_NIL;
 
 #if DEFAULT_ENCODE_KEEP_BUFFER > 0
     strbuf_init(&cfg->encode_buf, 0);
@@ -883,7 +896,7 @@ static int json_encode(lua_State *l)
 /* ===== DECODING ===== */
 
 static void json_process_value(lua_State *l, json_parse_t *json,
-                               json_token_t *token);
+                               json_token_t *token, int decode_null_object_value_as_nil);
 
 static int hexdigit2int(char hex)
 {
@@ -1312,7 +1325,8 @@ static void json_parse_object_context(lua_State *l, json_parse_t *json)
 
         /* Fetch value */
         json_next_token(json, &token);
-        json_process_value(l, json, &token);
+        json_process_value(l, json, &token,
+                           json->cfg->decode_null_object_value_as_nil);
 
         /* Set key = value */
         lua_rawset(l, -3);
@@ -1359,7 +1373,7 @@ static void json_parse_array_context(lua_State *l, json_parse_t *json)
     }
 
     for (i = 1; ; i++) {
-        json_process_value(l, json, &token);
+        json_process_value(l, json, &token, 0);
         lua_rawseti(l, -2, i);            /* arr[i] = value */
 
         json_next_token(json, &token);
@@ -1378,7 +1392,7 @@ static void json_parse_array_context(lua_State *l, json_parse_t *json)
 
 /* Handle the "value" context */
 static void json_process_value(lua_State *l, json_parse_t *json,
-                               json_token_t *token)
+                               json_token_t *token, int decode_null_object_value_as_nil)
 {
     switch (token->type) {
     case T_STRING:
@@ -1399,7 +1413,10 @@ static void json_process_value(lua_State *l, json_parse_t *json,
     case T_NULL:
         /* In Lua, setting "t[k] = nil" will delete k from the table.
          * Hence a NULL pointer lightuserdata object is used instead */
-        lua_pushlightuserdata(l, NULL);
+        if (decode_null_object_value_as_nil)
+            lua_pushnil(l);
+        else
+            lua_pushlightuserdata(l, NULL);
         break;;
     default:
         json_throw_parse_error(l, json, "value", token);
@@ -1433,7 +1450,7 @@ static int json_decode(lua_State *l)
     json.tmp = strbuf_new(json_len);
 
     json_next_token(&json, &token);
-    json_process_value(l, &json, &token);
+    json_process_value(l, &json, &token, 0);
 
     /* Ensure there is no more input left */
     json_next_token(&json, &token);
@@ -1521,6 +1538,7 @@ static int lua_cjson_new(lua_State *l)
         { "decode_invalid_numbers", json_cfg_decode_invalid_numbers },
         { "encode_escape_forward_slash", json_cfg_encode_escape_forward_slash },
         { "encode_skip_unsupported_value_types", json_cfg_encode_skip_unsupported_value_types },
+        { "decode_null_object_value_as_nil", json_cfg_decode_null_object_value_as_nil },
         { "new", lua_cjson_new },
         { NULL, NULL }
     };
