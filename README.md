@@ -223,7 +223,7 @@ If disabled, JSON null values will be decoded as cjson.null.
 The `enabled` argument is a boolean.
 
 
-Exaample:
+Example:
 
 ```lua
 local cjson = require "cjson"

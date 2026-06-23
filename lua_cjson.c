@@ -84,7 +84,7 @@
 #define DEFAULT_DECODE_ARRAY_WITH_ARRAY_MT 0
 #define DEFAULT_ENCODE_ESCAPE_FORWARD_SLASH 1
 #define DEFAULT_ENCODE_SKIP_UNSUPPORTED_VALUE_TYPES 0
-#define DEFAULT_decode_null_object_value_as_nil 0
+#define DEFAULT_DECODE_NULL_OBJECT_VALUE_AS_NIL 0
 
 #ifdef DISABLE_INVALID_NUMBERS
 #undef DEFAULT_DECODE_INVALID_NUMBERS
@@ -493,7 +493,7 @@ static void json_create_config(lua_State *l)
     cfg->decode_array_with_array_mt = DEFAULT_DECODE_ARRAY_WITH_ARRAY_MT;
     cfg->encode_escape_forward_slash = DEFAULT_ENCODE_ESCAPE_FORWARD_SLASH;
     cfg->encode_skip_unsupported_value_types = DEFAULT_ENCODE_SKIP_UNSUPPORTED_VALUE_TYPES;
-    cfg->decode_null_object_value_as_nil = DEFAULT_decode_null_object_value_as_nil;
+    cfg->decode_null_object_value_as_nil = DEFAULT_DECODE_NULL_OBJECT_VALUE_AS_NIL;
 
 #if DEFAULT_ENCODE_KEEP_BUFFER > 0
     strbuf_init(&cfg->encode_buf, 0);
@@ -1326,7 +1326,7 @@ static void json_parse_object_context(lua_State *l, json_parse_t *json)
         /* Fetch value */
         json_next_token(json, &token);
         json_process_value(l, json, &token,
-                           json->cfg && json->cfg->decode_null_object_value_as_nil);
+                           json->cfg->decode_null_object_value_as_nil);
 
         /* Set key = value */
         lua_rawset(l, -3);

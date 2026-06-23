@@ -345,8 +345,8 @@ local t2 = cjson.decode(json)
 print(t2.key1 == nil and "key1 is nil" or "key1 is not nil")
 
 -- array null are not changed
-local json_arr = [[[null, "value2"]]]
-local t = cjson.decode(json)
+local json_arr = '[null, "value2"]'
+local t = cjson.decode(json_arr)
 print(t[1] == cjson.null and "index 1 is null" or "key1 is not null")
 --- out
 key1 is null
